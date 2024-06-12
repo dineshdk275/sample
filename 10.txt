@@ -4,10 +4,10 @@ import java.util.Scanner;
 import java.util.Stack;
 
 class Instruction {
-    String op;    // operation
-    String arg1;  // first argument
-    String arg2;  // second argument
-    String result;// result
+    String op;    
+    String arg1;  
+    String arg2;  
+    String result;
 
     Instruction(String op, String arg1, String arg2, String result) {
         this.op = op;
