@@ -1,96 +1,130 @@
 import java.util.*;
-import java.io.*;
-public class Exp5 {
-    static char nonTerminals[], terminals[];
-    static int nonTermLen, termLen;
-    static String grammar[][], first[], follow[];
-    public static void main(String args[]) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("Enter the non-terminals:");
-        String nt = br.readLine();
-        nonTermLen = nt.length();
-        nonTerminals = nt.toCharArray();
-        System.out.println("Enter the terminals:");
-        String t = br.readLine();
-        termLen = t.length();
-        terminals = t.toCharArray();
-        System.out.println("Specify the grammar (Enter 9 for epsilon production):");
-        grammar = new String[nonTermLen][];
-        for (int i = 0; i < nonTermLen; i++) {
-            System.out.println("Enter the number of productions for " + nonTerminals[i]);
-            int n = Integer.parseInt(br.readLine());
-            grammar[i] = new String[n];
-            System.out.println("Enter the productions:");
-            for (int j = 0; j < n; j++)
-                grammar[i][j] = br.readLine();
+
+public class HelloWorld {
+
+    static int n;
+    static String[] productions = new String[10];
+    static Set<Character> firstSet = new HashSet<>();
+    static Set<Character> followSet = new HashSet<>();
+    static Set<Character> visitedFirst = new HashSet<>();
+    static Set<Character> visitedFollow = new HashSet<>();
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Enter the number of productions:");
+        n = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+
+        System.out.println("Enter the productions (e.g., E=E+T):");
+        for (int i = 0; i < n; i++) {
+            productions[i] = scanner.nextLine().trim();
+            // Ensure the production is valid
+            if (productions[i].length() < 3 || productions[i].charAt(1) != '=') {
+                System.out.println("Invalid production: " + productions[i]);
+                return;
+            }
         }
-        first = new String[nonTermLen];
-        for (int i = 0; i < nonTermLen; i++)
-            first[i] = calculateFirst(i);
-        System.out.println("First Set:");
-        printSets(first);
-        follow = new String[nonTermLen];
-        for (int i = 0; i < nonTermLen; i++)
-            follow[i] = calculateFollow(i);
-        System.out.println("Follow Set:");
-        printSets(follow);
-    }
-    static String calculateFirst(int index) {
-        String temp = "";
-        for (String production: grammar[index]) {
-            char firstChar = production.charAt(0);
-            if (Character.isLowerCase(firstChar) || firstChar == '9')
-                temp += firstChar;
-            else
-                temp += calculateFirst(getIndex(firstChar));
+
+        while (true) {
+            System.out.println("Enter the element whose First & Follow is to be found: ");
+            char c = scanner.nextLine().trim().charAt(0);
+
+            firstSet.clear();
+            visitedFirst.clear();
+            findFirst(c);
+            System.out.println("First(" + c + ") = " + firstSet);
+
+            followSet.clear();
+            visitedFollow.clear();
+            findFollow(c);
+            System.out.println("Follow(" + c + ") = " + followSet);
+
+            System.out.println("Continue (0/1)? ");
+            if (scanner.nextInt() != 1) break;
+            scanner.nextLine(); // Consume newline
         }
-        return temp;
+
+        scanner.close();
     }
-    static String calculateFollow(int index) {
-        String temp = "";
-        if (index == 0)
-            temp = "$";
-        for (int j = 0; j < nonTermLen; j++) {
-            for (String production: grammar[j]) {
-                for (int k = 0; k < production.length(); k++) {
-                    if (production.charAt(k) == nonTerminals[index]) {
-                        if (k == production.length() - 1) {
-                            if (j < index)
-                                temp += follow[j];
-                        } else {
-                            int nextIndex = getIndex(production.charAt(k + 1));
-                            if (nextIndex != -1) {
-                                temp += first[nextIndex];
-                                if (first[nextIndex].contains("9") && k + 1 == production.length() - 1)
-                                    temp += follow[j];
-                            } else
-                                temp += production.charAt(k + 1);
-                        }
+
+    static void findFirst(char c) {
+        if (!Character.isUpperCase(c)) {
+            firstSet.add(c);
+            return;
+        }
+
+        // Prevent infinite recursion
+        if (visitedFirst.contains(c)) return;
+        visitedFirst.add(c);
+
+        for (String production : productions) {
+            if (production == null || production.length() < 3) continue;
+            if (production.charAt(0) == c) {
+                char next = production.charAt(2);
+                if (next == '$') {
+                    findFollow(production.charAt(0));
+                } else if (Character.isLowerCase(next)) {
+                    firstSet.add(next);
+                } else {
+                    findFirst(next);
+                }
+            }
+        }
+    }
+
+    static void findFollow(char c) {
+        if (productions[0].charAt(0) == c) {
+            followSet.add('$');
+        }
+
+        // Prevent infinite recursion
+        if (visitedFollow.contains(c)) return;
+        visitedFollow.add(c);
+
+        for (String production : productions) {
+            if (production == null || production.length() < 3) continue;
+            for (int j = 2; j < production.length(); j++) {
+                if (production.charAt(j) == c) {
+                    if (j + 1 < production.length()) {
+                        findFirst(production.charAt(j + 1));
+                        followSet.addAll(firstSet);
+                        firstSet.remove('$'); // Do not include epsilon in Follow set
+                    }
+                    if (j + 1 == production.length() && production.charAt(0) != c) {
+                        findFollow(production.charAt(0));
                     }
                 }
             }
         }
-        return temp;
-    }
-    static void printSets(String[] set) {
-        for (String s: set)
-            System.out.println(removeDuplicates(s));
-    }
-    static int getIndex(char c) {
-        for (int i = 0; i < nonTermLen; i++) {
-            if (nonTerminals[i] == c)
-                return i;
-        }
-        return -1;
-    }
-    static String removeDuplicates(String str) {
-        char[] chars = str.toCharArray();
-        Set < Character > charSet = new LinkedHashSet < > ();
-        for (char c: chars)
-            charSet.add(c);
-        StringBuilder sb = new StringBuilder();
-        for (Character character: charSet)
-            sb.append(character);
-        return sb.toString();
     }
 }
+
+
+Enter the number of productions:
+6
+Enter the productions (e.g., E=E+T):
+E=E+T
+E=T
+T=T*F
+T=F
+F=(E)
+F=i
+Enter the element whose First & Follow is to be found: 
+E
+First(E) = [i, (]
+Follow(E) = [$, )]
+Continue (0/1)?
+1
+Enter the element whose First & Follow is to be found: 
+T
+First(T) = [i, (]
+Follow(T) = [), $, +]
+Continue (0/1)?
+1
+Enter the element whose First & Follow is to be found: 
+F
+First(F) = [i, (]
+Follow(F) = [), $, *, +]
+Continue (0/1)?
+0
