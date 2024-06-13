@@ -1,67 +1,75 @@
 import java.util.*;
-
-public class LeftFactoring {
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        System.out.println("Enter the number of productions:");
-        int n = sc.nextInt();
-        sc.nextLine();
-        String[] productions = new String[n];
-        System.out.println("Enter the productions:");
-        for (int i = 0; i < n; i++) {
-            productions[i] = sc.nextLine();
-        }
-        eliminateLeftFactoring(productions);
-    }
-
-    private static void eliminateLeftFactoring(String[] productions) {
-        boolean leftFactored = false;
-        for (String production : productions) {
-            String[] parts = production.split("->");
-            String lhs = parts[0].trim();
-            String[] rhs = parts[1].split("\\|");
-            String prefix = findCommonPrefix(rhs);
-            if (!prefix.isEmpty()) {
-                leftFactored = true;
-                System.out.println(lhs + "->" + prefix + lhs + "'");
-                List<String> newRhs = new ArrayList<>();
-                for (String r : rhs) {
-                    if (r.startsWith(prefix)) {
-                        String suffix = r.substring(prefix.length()).trim();
-                        if (suffix.isEmpty()) {
-                            suffix = "";
-                        }
-                        newRhs.add(suffix);
-                    } else {
-                        newRhs.add(r);
-                    }
-                }
-                System.out.println(lhs + "'->" + String.join("|", newRhs));
+public class Main
+{
+    private static String common(String str[]){
+        String prefix=str[0];
+        for(int i=1;i<str.length;i++){
+            while(!str[i].startsWith(prefix)){
+                prefix=prefix.substring(0,prefix.length()-1);
             }
-        }
-        if (!leftFactored) {
-            System.out.println("Given productions do not have left factoring");
-        }
-    }
-
-    private static String findCommonPrefix(String[] rhs) {
-        String prefix = rhs[0];
-        for (int i = 1; i < rhs.length; i++) {
-            while (rhs[i].indexOf(prefix) != 0) {
-                prefix = prefix.substring(0, prefix.length() - 1);
-                if (prefix.isEmpty()) {
-                    return "";
-                }
+            
+            if(prefix.isEmpty()){
+                return "";
             }
         }
         return prefix;
     }
+    
+	public static void main(String[] args) {
+		Scanner sc = new Scanner(System.in);
+		int n=sc.nextInt();
+		String str[] = new String[n];
+		for(int i=0;i<str.length;i++){
+		    str[i]=sc.next();
+		}
+		for(int i=0;i<str.length;i++){
+		   String s = str[i].substring(0,1);
+		   String arr[] = str[i].substring(3).split("\\|");
+		   Map<Character,ArrayList<String>> map = new HashMap<>();
+		   for(String k:arr){
+		       char ch=k.charAt(0);
+		       if(!map.containsKey(ch)){
+		           map.put(ch,new ArrayList<String>());
+		           
+		       }
+		       map.get(ch).add(k);
+		   }
+		   String out = s+"'->";
+		   String in=s+"->";
+		   String prefix="";
+		   for(char key:map.keySet()){
+		       String krr[]=map.get(key).toArray(new String[0]);
+		       if(krr.length>1){
+		             prefix=krr[0];
+        		       prefix = common(krr);
+        		       for(int l=0;l<krr.length;l++){
+        		           if(prefix.length()==krr[l].length()){
+        		               if(prefix.equals(krr[l])){
+        		                   in+="E|";
+        		               }
+        		               else{
+        		                   in+=krr[l]+"|";
+        		               }
+        		               continue;
+        		           }
+        		           out+=krr[l].substring(prefix.length())+"|";
+        		       }
+		       }
+		       else{
+		           in+=(krr[0])+"|";
+		       }
+		     
+		   }
+		   in+=(prefix+s+"'");
+		   System.out.println(out+"\n"+in);
+		}
+		
+	
+	}
 }
 
-
-OUTPUT
-Enter the number of productions: 1
-S->Sa|Sb|Sc
-
-S->SS'
-S'->a|b|c
+output:
+1
+A->ab|ac|ad|r
+A'->b|c|d|
+A->r|aA'
